@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Typing Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f8;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+
+    .container {
+      background-color: white;
+      margin-top: 50px;
+      padding: 30px 40px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      width: 500px;
+      max-width: 90%;
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+
+    textarea, input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    button {
+      padding: 10px 15px;
+      margin-right: 10px;
+      margin-bottom: 10px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    #gameSection {
+      margin-top: 20px;
+    }
+
+    #wordDisplay {
+      font-size: 20px;
+      font-weight: bold;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    #throttleLog, #debounceLog {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #ecf0f1;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    #debounceLog {
+      margin-top: 5px;
+      background-color: #dff9fb;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Typing Game</h2>
+
+  <div>
+    <label for="wordList">Words List:</label><br>
+    <textarea id="wordList" rows="3" placeholder="Words will appear here..." readonly></textarea>
+
+    <input type="text" id="singleWord" placeholder="Enter a word to add">
+    <button onclick="addWord()">Add Word</button>
+    <button onclick="startGame()">Start Game</button>
+  </div>
+
+  <div id="gameSection" style="display:none;">
+    <p id="wordDisplay"></p>
+    <input type="text" id="typingInput" placeholder="Type the word shown above...">
+    <div id="throttleLog"></div>
+    <div id="debounceLog"></div>
+  </div>
+</div>
+
+<script>
+  let words = [];
+  let currentWordIndex = 0;
+
+  function addWord() {
+    const singleWordInput = document.getElementById('singleWord');
+    const word = singleWordInput.value.trim();
+    if (!word) {
+      alert('Please enter a word to add.');
+      return;
+    }
+    words.push(word);
+    updateWordListTextarea();
+    singleWordInput.value = '';
+  }
+
+  function updateWordListTextarea() {
+    document.getElementById('wordList').value = words.join(', ');
+  }
+
+  function startGame() {
+    if (words.length === 0) {
+      alert('Please add some words before starting the game.');
+      return;
+    }
+
+    currentWordIndex = 0;
+    showWord();
+    document.getElementById('gameSection').style.display = 'block';
+    document.getElementById('typingInput').value = '';
+    document.getElementById('debounceLog').textContent = '';
+    document.getElementById('throttleLog').textContent = '';
+  }
+
+  function showWord() {
+    document.getElementById('wordDisplay').textContent = "Type this word: " + words[currentWordIndex];
+  }
+
+  function debounce(fn, delay) {
+    let timer;
+    return function(...args) {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn.apply(this, args), delay);
+    };
+  }
+
+  function throttle(fn, limit) {
+    let lastCall = 0;
+    return function(...args) {
+      const now = Date.now();
+      if (now - lastCall >= limit) {
+        lastCall = now;
+        fn.apply(this, args);
+      }
+    };
+  }
+
+  const input = document.getElementById('typingInput');
+  const throttleLog = document.getElementById('throttleLog');
+  const debounceLog = document.getElementById('debounceLog');
+
+  const handleThrottle = throttle((e) => {
+    throttleLog.textContent = "Throttle: Typing... \"" + e.target.value + "\"";
+  }, 500);
+
+  const handleDebounce = debounce((e) => {
+    const typed = e.target.value.trim().toLowerCase();
+    const correct = words[currentWordIndex].toLowerCase();
+    if (typed === correct) {
+      debounceLog.textContent = "Debounce: Correct! \"" + typed + "\"";
+      currentWordIndex++;
+      if (currentWordIndex < words.length) {
+        showWord();
+        input.value = '';
+      } else {
+        debounceLog.textContent += "\nAll words completed!";
+        document.getElementById('wordDisplay').textContent = '';
+      }
+    } else {
+      debounceLog.textContent = "Debounce: Incorrect: \"" + typed + "\"";
+    }
+  }, 800);
+
+  input.addEventListener('keyup', (e) => {
+    handleThrottle(e);
+    handleDebounce(e);
+  });
+</script>
+
+</body>
+</html>
+
